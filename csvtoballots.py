@@ -8,7 +8,29 @@ import numpy as np
 from math import *
 import csv
 import re
+from collections import defaultdict
 # from pprint import pprint
+
+def compress_ballots(ballots, weights):
+
+    (nballots,ncands) = np.shape(ballots)
+
+    ballot_types = {}
+    ballot_type_weights = defaultdict(float)
+    for ballot, w in zip(ballots,weights):
+        sig = ballot.tobytes()
+
+        if sig not in ballot_types:
+            ballot_types[sig] = ballot
+            
+        ballot_type_weights[sig] += w
+
+    ballot_sigs = sorted([sig for sig in ballot_types.keys()])
+    compressed_ballots = np.array([ballot_types[sig] for sig in ballot_sigs])
+    compressed_weights = np.array([ballot_type_weights[sig] for sig in ballot_sigs])
+
+    (nballots,ncands) = np.shape(compressed_ballots)
+    return compressed_ballots, compressed_weights
 
 def csvtoballots(filename, ftype=0):
     "convert csv file to a set of ballots"
@@ -96,6 +118,9 @@ def csvtoballots(filename, ftype=0):
                     if rr not in nocountset:
                         b[candindex[rr]] = 5 - j
             weight = np.ones((len(ballots)),dtype=int)
+
+    # Compress ballots before returning
+    ballots, weight = compress_ballots(ballots,weight)
 
     return(ballots, weight, cnames)
 
